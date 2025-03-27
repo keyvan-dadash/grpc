@@ -50,3 +50,9 @@
 [submodule "third_party/opentelemetry-cpp"]
 	path = third_party/opentelemetry-cpp
 	url = https://github.com/open-telemetry/opentelemetry-cpp
+[submodule "third_party/atomic_queue"]
+	path = third_party/atomic_queue
+	url = https://github.com/keyvan-dadash/atomic_queue_shm
+[submodule "third_party/libcuckoo"]
+	path = third_party/libcuckoo
+	url = https://github.com/efficient/libcuckoo

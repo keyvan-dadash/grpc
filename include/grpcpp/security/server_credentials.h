@@ -106,6 +106,8 @@ std::shared_ptr<ServerCredentials> InsecureServerCredentials();
 
 namespace experimental {
 
+std::shared_ptr<ServerCredentials> MemInsecureServerCredentials();
+
 /// Options to create ServerCredentials with ALTS
 struct AltsServerCredentialsOptions {
   /// Add fields if needed.

@@ -273,6 +273,8 @@ std::shared_ptr<CallCredentials> ExternalAccountCredentials(
 
 namespace experimental {
 
+std::shared_ptr<ChannelCredentials> MemInsecureChannelCredentials();
+
 /// Options for creating STS Oauth Token Exchange credentials following the IETF
 /// draft https://tools.ietf.org/html/draft-ietf-oauth-token-exchange-16.
 /// Optional fields may be set to empty string. It is the responsibility of the

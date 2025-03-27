@@ -1011,6 +1011,15 @@ std::shared_ptr<grpc::Channel> Server::InProcessChannel(
           grpc::experimental::ClientInterceptorFactoryInterface>>());
 }
 
+std::shared_ptr<grpc::Channel> Server::MemChannel(
+    const grpc::ChannelArguments& args) {
+  grpc_channel_args channel_args = args.c_channel_args();
+  return grpc::CreateChannelInternal(
+      "mem", grpc_inproc_channel_create(server_, &channel_args, nullptr),
+      std::vector<std::unique_ptr<
+          grpc::experimental::ClientInterceptorFactoryInterface>>());
+}
+
 std::shared_ptr<grpc::Channel>
 Server::experimental_type::InProcessChannelWithInterceptors(
     const grpc::ChannelArguments& args,

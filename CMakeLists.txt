@@ -387,6 +387,9 @@ include(cmake/upb.cmake)
 include(cmake/xxhash.cmake)
 include(cmake/zlib.cmake)
 include(cmake/download_archive.cmake)
+# HERE
+include(cmake/atomic_queue.cmake)
+include(cmake/libcuckoo.cmake)
 
 if(_gRPC_PLATFORM_LINUX OR _gRPC_PLATFORM_POSIX)
   include(cmake/systemd.cmake)
@@ -2271,6 +2274,17 @@ add_library(grpc
   src/core/ext/transport/chttp2/transport/writing.cc
   src/core/ext/transport/inproc/inproc_transport.cc
   src/core/ext/transport/inproc/legacy_inproc_transport.cc
+
+  # HERE
+  src/core/ext/transport/mem/client/mem_client.cc
+  src/core/ext/transport/mem/server/mem_server.cc
+  src/core/ext/transport/mem/mem_acceptor.cc
+  src/core/ext/transport/mem/mem_client_data_connection.cc
+  src/core/ext/transport/mem/server_data_connection_pool.cc
+  src/core/ext/transport/mem/client_shared_mem_transport.cc
+  src/core/ext/transport/mem/server_shared_mem_transport.cc
+  src/cpp/ext/mem_transport.cc
+
   src/core/ext/upb-gen/envoy/admin/v3/certs.upb_minitable.c
   src/core/ext/upb-gen/envoy/admin/v3/clusters.upb_minitable.c
   src/core/ext/upb-gen/envoy/admin/v3/config_dump.upb_minitable.c
@@ -3080,6 +3094,8 @@ target_link_libraries(grpc
   gpr
   ${_gRPC_SSL_LIBRARIES}
   ${_gRPC_ADDRESS_SORTING_LIBRARIES}
+  atomic_queue # HERE
+  libcuckoo
 )
 if(_gRPC_PLATFORM_IOS OR _gRPC_PLATFORM_MAC)
   target_link_libraries(grpc "-framework CoreFoundation")
@@ -3351,6 +3367,18 @@ add_library(grpc_unsecure
   src/core/ext/transport/chttp2/transport/writing.cc
   src/core/ext/transport/inproc/inproc_transport.cc
   src/core/ext/transport/inproc/legacy_inproc_transport.cc
+
+  # HERE
+  src/core/ext/transport/mem/client/mem_client.cc
+  src/core/ext/transport/mem/server/mem_server.cc
+  src/core/ext/transport/mem/mem_acceptor.cc
+  src/core/ext/transport/mem/mem_client_data_connection.cc
+  src/core/ext/transport/mem/server_data_connection_pool.cc
+  src/core/ext/transport/mem/client_shared_mem_transport.cc
+  src/core/ext/transport/mem/server_shared_mem_transport.cc
+  src/cpp/ext/mem_transport.cc
+
+
   src/core/ext/upb-gen/google/api/annotations.upb_minitable.c
   src/core/ext/upb-gen/google/api/http.upb_minitable.c
   src/core/ext/upb-gen/google/protobuf/any.upb_minitable.c
@@ -3743,6 +3771,8 @@ target_link_libraries(grpc_unsecure
   ${_gRPC_CARES_LIBRARIES}
   gpr
   ${_gRPC_ADDRESS_SORTING_LIBRARIES}
+  atomic_queue # HERE
+  libcuckoo
 )
 if(_gRPC_PLATFORM_IOS OR _gRPC_PLATFORM_MAC)
   target_link_libraries(grpc_unsecure "-framework CoreFoundation")
@@ -4524,6 +4554,7 @@ add_library(grpc++
   src/cpp/util/status.cc
   src/cpp/util/string_ref.cc
   src/cpp/util/time_cc.cc
+  src/cpp/ext/mem_transport.cc #HERE
   ${gRPC_UPB_GEN_DUPL_SRC}
 )
 
@@ -5271,6 +5302,7 @@ add_library(grpc++_unsecure
   src/cpp/util/status.cc
   src/cpp/util/string_ref.cc
   src/cpp/util/time_cc.cc
+  src/cpp/ext/mem_transport.cc #HERE
   ${gRPC_UPB_GEN_DUPL_SRC}
   ${gRPC_ADDITIONAL_DLL_CXX_SRC}
 )

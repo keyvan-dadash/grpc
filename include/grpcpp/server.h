@@ -104,6 +104,9 @@ class Server : public ServerInterface, private internal::GrpcLibrary {
   /// Establish a channel for in-process communication
   std::shared_ptr<Channel> InProcessChannel(const ChannelArguments& args);
 
+  /// Establish a channel for in-process communication
+  std::shared_ptr<Channel> MemChannel(const ChannelArguments& args);
+
   /// NOTE: class experimental_type is not part of the public API of this class.
   /// TODO(yashykt): Integrate into public API when this is no longer
   /// experimental.
