@@ -28,6 +28,7 @@ void MEMServerDataConnectionPool::StartDataConnectionPool() {
       while (true) {
       // right now connection list is empty.
         auto msg = data_channel->GetMessage();
+        //std::cout << "We got a message!" << std::endl;
         on_receive_callback_(msg);
       }
     });

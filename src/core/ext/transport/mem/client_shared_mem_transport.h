@@ -20,11 +20,14 @@
 #include <memory>
 
 #include "shm/posix_channel.h"
+#include "shm/posix_shm_area.h"
+#include "src/core/ext/transport/mem/allocator/allocator.h"
 #include "src/core/ext/transport/mem/common/commands.h"
 #include "src/core/ext/transport/mem/mem_message.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/event_engine/thread_pool/thread_pool.h"
+#include "src/core/lib/promise/mpsc.h"
 #include "src/core/lib/transport/call_spine.h"
 #include "src/core/lib/transport/transport.h"
 
@@ -32,33 +35,50 @@ namespace grpc_core {
 namespace mem {
 
 class MemClientTransport final : public ClientTransport {
+private:
+  struct Request : RefCounted<Request> {
+    explicit Request(CallHandler call_handler)
+        : call(std::move(call_handler)) {}
+    CallHandler call;
+  };
+  using RequestMap = absl::flat_hash_map<uint32_t, RefCountedPtr<Request>>;
+
 public:
   explicit MemClientTransport(std::string server_addr);
-  ~MemClientTransport() override {};
+  ~MemClientTransport() override{};
 
   FilterStackTransport *filter_stack_transport() override { return nullptr; }
   ClientTransport *client_transport() override { return this; }
   ServerTransport *server_transport() override { return nullptr; }
-  absl::string_view GetTransportName() const override { return "mem_transport"; }
+  absl::string_view GetTransportName() const override {
+    return "mem_transport";
+  }
   void SetPollset(grpc_stream *, grpc_pollset *) override {}
   void SetPollsetSet(grpc_stream *, grpc_pollset_set *) override {}
   void PerformOp(grpc_transport_op *) override;
   void Orphan() override;
 
+  auto LoopServerMessageProcess();
   void LoopRead();
+
+  RefCountedPtr<Request> GetRequest(uint32_t request_id);
   int StoreRequestCall(CallHandler call_handler);
+
   auto CallOutboundLoop(int request_id, CallHandler call_handler);
   void StartCall(CallHandler call_handler) override;
 
 private:
-  struct Request : RefCounted<Request> {
-    explicit Request(CallHandler call_handler) : call(std::move(call_handler)) {}
-    CallHandler call;
-  };
-  using RequestMap = absl::flat_hash_map<uint32_t, RefCountedPtr<Request>>;
-
   bool waitForDataConnection();
-  auto sendRequestOrWait(msg::ClientMsg& msg);
+  auto sendRequestOrWait(msg::ClientMsg msg);
+
+  auto OnTransportActivityDone(absl::string_view activity) {
+    return [self = RefAsSubclass<MemClientTransport>(),
+            activity](absl::Status status) {
+      GRPC_TRACE_LOG(chaotic_good, INFO)
+          << "MEM: OnTransportActivityDone: activity=" << activity
+          << " status=" << status;
+    };
+  }
 
   std::shared_ptr<grpc_event_engine::experimental::ThreadPool> executor_;
   Mutex mu_;
@@ -67,14 +87,29 @@ private:
   std::string srv_addr_;
   std::string cm_channel_name_;
   std::string response_channel_name_;
-  
-  std::shared_ptr<shm::posix::POSIXChannel<msg::ServerCtrlCommands, 128, 1>> srv_connection_;
-  std::shared_ptr<shm::posix::POSIXChannel<msg::ClientCtrlCommands, 16, 1>> cm_channel_;
-  std::shared_ptr<shm::posix::POSIXChannel<msg::ServerMsg, 128, 1>> response_channel_;
+  std::string request_pool_name_;
 
-  std::shared_ptr<shm::posix::POSIXChannel<msg::ClientMsg, 1024, 1>> request_channel_;
-  int req_id_ = 0;
+  // Channels
+  std::shared_ptr<shm::posix::POSIXChannel<msg::ServerCtrlCommands, 128, 1>>
+      srv_connection_;
+  std::shared_ptr<shm::posix::POSIXChannel<msg::ClientCtrlCommands, 16, 1>>
+      cm_channel_;
+  std::shared_ptr<shm::posix::POSIXChannel<msg::ServerMsg, 128, 1>>
+      response_channel_;
+
+  // Pools
+  std::shared_ptr<shm::posix::POSIXSharedMemory<char *>> request_pool_;
+  std::shared_ptr<shm::posix::POSIXSharedMemory<char *>> response_pool_;
+
+  std::shared_ptr<shm::posix::POSIXChannel<msg::ClientMsg, 1024, 1>>
+      request_channel_;
+  int req_id_ = 1;
+  int connection_id_;
   RequestMap request_map_ ABSL_GUARDED_BY(mu_);
+  allocator::SharedPtrAllocator allocator_;
+  std::map<int, msg::MemClientMetadata *> unfinished_req_;
+  RefCountedPtr<Party> party_;
+  MpscReceiver<msg::ServerMsg> incoming_msg_;
 };
 } // namespace mem
 } // namespace grpc_core

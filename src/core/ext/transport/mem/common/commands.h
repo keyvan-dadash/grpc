@@ -21,6 +21,9 @@ static std::string gen_random(const int len) {
   return tmp_s;
 }
 
+const int GB = 1073741824; 
+const int MB = 1000000; 
+
 struct SharedMemArea {
   char *memory_area;
 };

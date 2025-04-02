@@ -17,8 +17,11 @@
 
 #include <grpc/grpc.h>
 #include <grpc/support/port_platform.h>
+#include <cstdint>
 #include <memory>
 
+#include "absl/status/status.h"
+#include "libcuckoo/cuckoohash_map.hh"
 #include "shm/posix_channel.h"
 #include "shm/posix_shm_area.h"
 #include "src/core/ext/transport/mem/common/commands.h"
@@ -27,16 +30,29 @@
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/promise/inter_activity_latch.h"
 #include "src/core/lib/promise/mpsc.h"
+#include "src/core/lib/promise/poll.h"
+#include "src/core/lib/promise/status_flag.h"
+#include "src/core/lib/transport/call_spine.h"
 #include "src/core/lib/transport/transport.h"
+#include "src/core/util/ref_counted_ptr.h"
 
 namespace grpc_core {
 namespace mem {
 
 class MEMServerTansport final : public ServerTransport {
 
+  private:
+struct RequestInfo : RefCounted<RequestInfo> {
+    explicit RequestInfo(CallInitiator call) : call(std::move(call)) {}
+    CallInitiator call;
+  };
+
+  //using RequestInfoMap = libcuckoo::cuckoohash_map<uint32_t, RefCountedPtr<RequestInfo>>;
+  using RequestInfoMap = absl::flat_hash_map<uint32_t, RefCountedPtr<RequestInfo>>;
+
 public:
   MEMServerTansport(const ChannelArgs &args,
-                    std::shared_ptr<MEMClientDataConnection> data_connection);
+                    std::shared_ptr<MEMClientDataConnection> data_connection, int connection_id);
 
   FilterStackTransport *filter_stack_transport() override { return nullptr; }
   ClientTransport *client_transport() override { return nullptr; }
@@ -46,6 +62,11 @@ public:
   void SetPollsetSet(grpc_stream *, grpc_pollset_set *) override {}
   void PerformOp(grpc_transport_op *) override;
   void Orphan() override;
+
+
+  auto SendCallBody(int64_t start, uint32_t req_id, CallInitiator call_initiator);
+  auto SendCallInitialMetadataAndBody(int64_t start, uint32_t req_id, CallInitiator call_initiator);
+  auto CallOutboundLoop(int64_t start, uint32_t req_id, CallInitiator call_initiator);
 
   auto ReadLoop();
   auto WriteLoop();
@@ -66,7 +87,16 @@ public:
     };
   }
 
+  absl::Status AddNewRequestInfo(uint32_t request_id, CallInitiator call_initiator);
+  RefCountedPtr<RequestInfo> GetRequestInfo(uint32_t request_id);
+  RefCountedPtr<RequestInfo> ExtractRequestInfo(uint32_t request_id);
+  auto ProcessMessageData(msg::ServerMsg msg);
+
 private:
+
+  auto sendRequestOrWait(msg::ServerMsg msg);
+  Mutex mu_;
+  int connection_id_;
   std::shared_ptr<MEMClientDataConnection> data_connection_;
   RefCountedPtr<UnstartedCallDestination> call_destination_;
   const RefCountedPtr<CallArenaAllocator> call_arena_allocator_;
@@ -75,6 +105,8 @@ private:
   MpscReceiver<msg::ClientMsg> incoming_msg_;
   InterActivityLatch<void> got_acceptor_;
   RefCountedPtr<Party> party_;
+  RequestInfoMap request_info_map_;
+  allocator::SharedPtrAllocator allocator_;
 };
 
 } // namespace mem

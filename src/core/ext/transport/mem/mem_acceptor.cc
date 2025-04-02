@@ -1,6 +1,8 @@
 
 
 #include "src/core/ext/transport/mem/mem_acceptor.h"
+#include <chrono>
+#include <thread>
 #include "src/core/ext/transport/mem/mem_message.h"
 namespace grpc_core {
 namespace mem {
@@ -22,6 +24,7 @@ msg::ServerCtrlCommands MEMAcceptor::Accept() {
     msg::ServerCtrlCommands cm;
     auto status = recv_queue->queue.try_pop(cm);
     if (!status) {
+      std::this_thread::sleep_for(std::chrono::microseconds(20));
       continue;
     }
     return cm;

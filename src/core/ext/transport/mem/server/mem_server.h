@@ -3,6 +3,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "shm/posix_channel.h"
+#include "shm/posix_shm_area.h"
 #include "shm/xsi_channel.h"
 #include "src/core/ext/transport/mem/common/commands.h"
 #include "libcuckoo/cuckoohash_map.hh"
@@ -13,6 +14,7 @@
 #include "src/core/ext/transport/mem/server_data_connection_pool.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/event_engine/thread_pool/thread_pool.h"
+#include "src/core/lib/promise/mpsc.h"
 #include "src/core/server/server.h"
 #include "src/core/util/orphanable.h"
 #include "src/core/util/ref_counted_ptr.h"
@@ -71,23 +73,31 @@ public:
     void Orphan() override;
 
   private:
+    friend class MemServerListener;
+    
     void establishConnection();
 
     msg::ClientRequestConnection cr_;
     std::shared_ptr<MEMClientDataConnection> data_connection_;
     RefCountedPtr<MemServerListener> listener_;
+    std::shared_ptr<MpscSender<msg::ClientMsg>> sender_;
   };
+
+
+  std::string response_pool_name_;
+  std::shared_ptr<shm::posix::POSIXSharedMemory<char*>> response_pool_;
 
 private:
   Server *const server_;
   ChannelArgs args_;
+  std::shared_ptr<grpc_event_engine::experimental::EventEngine> event_engine_;
   std::unique_ptr<MEMAcceptor> acceptor_;
   std::unique_ptr<MEMServerDataConnectionPool> data_connections_;
   std::shared_ptr<grpc_event_engine::experimental::ThreadPool> executor_;
   Mutex mu_;
   bool shutdown_ ABSL_GUARDED_BY(mu_) = false;
   grpc_closure *on_destroy_done_ ABSL_GUARDED_BY(mu_) = nullptr;
-  libcuckoo::cuckoohash_map<std::string, RefCountedPtr<ActiveConnection>> connection_list_;
+  libcuckoo::cuckoohash_map<int, RefCountedPtr<ActiveConnection>> connection_list_;
   int64_t connection_id_cnt_ = 0;
 };
 } // namespace mem

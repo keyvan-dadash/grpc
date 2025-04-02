@@ -390,6 +390,7 @@ include(cmake/download_archive.cmake)
 # HERE
 include(cmake/atomic_queue.cmake)
 include(cmake/libcuckoo.cmake)
+include(cmake/snmalloc.cmake)
 
 if(_gRPC_PLATFORM_LINUX OR _gRPC_PLATFORM_POSIX)
   include(cmake/systemd.cmake)
@@ -2279,6 +2280,7 @@ add_library(grpc
   src/core/ext/transport/mem/client/mem_client.cc
   src/core/ext/transport/mem/server/mem_server.cc
   src/core/ext/transport/mem/mem_acceptor.cc
+  src/core/ext/transport/mem/mem_message.cc
   src/core/ext/transport/mem/mem_client_data_connection.cc
   src/core/ext/transport/mem/server_data_connection_pool.cc
   src/core/ext/transport/mem/client_shared_mem_transport.cc
@@ -3056,6 +3058,11 @@ if(WIN32 AND MSVC)
   endif()
 endif()
 
+# HERE
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(grpc PRIVATE -mcx16)
+endif()
+
 target_include_directories(grpc
   PUBLIC $<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE
@@ -3068,6 +3075,9 @@ target_include_directories(grpc
     ${_gRPC_UPB_INCLUDE_DIR}
     ${_gRPC_XXHASH_INCLUDE_DIR}
     ${_gRPC_ZLIB_INCLUDE_DIR}
+
+    # HERE
+    ${SNMALLOC_ROOT_DIR}/src
 )
 target_link_libraries(grpc
   ${_gRPC_ALLTARGETS_LIBRARIES}
@@ -3372,6 +3382,7 @@ add_library(grpc_unsecure
   src/core/ext/transport/mem/client/mem_client.cc
   src/core/ext/transport/mem/server/mem_server.cc
   src/core/ext/transport/mem/mem_acceptor.cc
+  src/core/ext/transport/mem/mem_message.cc
   src/core/ext/transport/mem/mem_client_data_connection.cc
   src/core/ext/transport/mem/server_data_connection_pool.cc
   src/core/ext/transport/mem/client_shared_mem_transport.cc
@@ -3735,6 +3746,11 @@ if(WIN32 AND MSVC)
   endif()
 endif()
 
+# HERE
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(grpc_unsecure PRIVATE -mcx16)
+endif()
+
 target_include_directories(grpc_unsecure
   PUBLIC $<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE
@@ -3747,6 +3763,9 @@ target_include_directories(grpc_unsecure
     ${_gRPC_UPB_INCLUDE_DIR}
     ${_gRPC_XXHASH_INCLUDE_DIR}
     ${_gRPC_ZLIB_INCLUDE_DIR}
+
+    # HERE
+    ${SNMALLOC_ROOT_DIR}/src
 )
 target_link_libraries(grpc_unsecure
   ${_gRPC_ALLTARGETS_LIBRARIES}
@@ -4584,6 +4603,11 @@ if(WIN32 AND MSVC)
   endif()
 endif()
 
+# HERE
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(grpc++ PRIVATE -mcx16)
+endif()
+
 target_include_directories(grpc++
   PUBLIC $<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE
@@ -4597,6 +4621,9 @@ target_include_directories(grpc++
     ${_gRPC_XXHASH_INCLUDE_DIR}
     ${_gRPC_ZLIB_INCLUDE_DIR}
     ${_gRPC_PROTO_GENS_DIR}
+
+    # HERE
+    ${SNMALLOC_ROOT_DIR}/src
 )
 target_link_libraries(grpc++
   ${_gRPC_ALLTARGETS_LIBRARIES}
@@ -5333,6 +5360,11 @@ if(WIN32 AND MSVC)
   endif()
 endif()
 
+# HERE
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(grpc++_unsecure PRIVATE -mcx16)
+endif()
+
 target_include_directories(grpc++_unsecure
   PUBLIC $<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE
@@ -5346,6 +5378,9 @@ target_include_directories(grpc++_unsecure
     ${_gRPC_XXHASH_INCLUDE_DIR}
     ${_gRPC_ZLIB_INCLUDE_DIR}
     ${_gRPC_PROTO_GENS_DIR}
+
+    # HERE
+    ${SNMALLOC_ROOT_DIR}/src
 )
 target_link_libraries(grpc++_unsecure
   ${_gRPC_ALLTARGETS_LIBRARIES}

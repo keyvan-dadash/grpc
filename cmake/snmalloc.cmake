@@ -1,0 +1,11 @@
+if(NOT SNMALLOC_ROOT_DIR)
+    set(SNMALLOC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/snmalloc)
+endif()
+
+if(EXISTS "${SNMALLOC_ROOT_DIR}/CMakeLists.txt")
+    set(SNMALLOC_HEADER_ONLY_LIBRARY ON)
+    add_compile_definitions(SNMALLOC_NO_REALLOCARRAY=OFF SNMALLOC_NO_REALLOCARR=OFF SNMALLOC_USE_WAIT_ON_ADDRESS=0)
+    add_subdirectory(${SNMALLOC_ROOT_DIR} third_party/snmalloc)
+else()
+    message(WARNING "gRPC_SNMALLOC_PROVIDER is \"module\" but SNMALLOC_ROOT_DIR is wrong")
+endif()

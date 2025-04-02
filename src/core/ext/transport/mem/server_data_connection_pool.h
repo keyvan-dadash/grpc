@@ -41,10 +41,13 @@ private:
       auto shm_queue = channel_->GetQueue();
       while (!status) {
         status = shm_queue->queue.try_pop(msg);
+        if (status) {
+          return msg;
+        }
         std::this_thread::sleep_for(std::chrono::microseconds(20));
       }
 
-      return msg;
+      return msg::ClientMsg{};
     }
 
     std::string channel_name_;

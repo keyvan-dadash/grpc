@@ -1,36 +1,31 @@
-#ifndef ALLOCATOR_H_
-#define ALLOCATOR_H_
+#ifndef SHARED_MEM_ALLOCATOR_
+#define SHARED_MEM_ALLOCATOR_
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
+#include "snmalloc/pal/pal_consts.h"
+#include "snmalloc/backend/fixedglobalconfig.h"
+#include "snmalloc/mem/secondary.h"
+#include "snmalloc/snmalloc.h"
+
 namespace grpc_core {
 namespace mem {
-
 namespace allocator {
 
-// Got from https://github.com/mtrebi/memory-allocators/blob/master/includes/Allocator.h
-class Allocator {
-public:
-    
-    explicit Allocator(const std::size_t totalSize) : m_totalSize { totalSize }, m_used { 0 }, m_peak { 0 } { }
+using namespace snmalloc;
 
-    virtual ~Allocator() { m_totalSize = 0; }
+using CustomGlobals = FixedRangeConfig<DefaultPal>;
+using FixedAlloc = Allocator<CustomGlobals>;
+using SharedPtrAllocator = std::shared_ptr<ScopedAllocator<FixedAlloc>>;
 
-    virtual void* Allocate(const std::size_t size) = 0;
-
-    virtual void Deallocate(void* ptr) = 0;
-
-protected:
-    std::size_t m_totalSize;
-    std::size_t m_used;   
-    std::size_t m_peak;
-
-    virtual void init() = 0;
+inline void init_allocator(void* region, std::size_t size_of_region) {
+  auto oe_base = region;
+  CustomGlobals::init(nullptr, oe_base, size_of_region);
 };
 
 } // namespace allocator
-
 } // namespace mem
-
 } // namespace grpc_core
 
 #endif

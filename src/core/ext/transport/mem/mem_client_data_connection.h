@@ -12,7 +12,7 @@ namespace mem {
 
 class MEMClientDataConnection {
 public:
-  explicit MEMClientDataConnection(msg::ClientRequestConnection req_connection);
+  explicit MEMClientDataConnection(msg::ClientRequestConnection req_connection, char* response_pool);
 
   ~MEMClientDataConnection();
 
@@ -20,11 +20,20 @@ public:
 
   void WriteResponse(msg::ServerMsg srv_msg);
 
+  char* GetOriginOfRequestMemory() {
+    return client_request_memory_area_->GetSHMAddr();
+  }
+
+  char* GetOriginOfResponsePoolMemory() {
+    return response_pool_;
+  }
+
 private:
   msg::ClientRequestConnection connection_info_;
   std::shared_ptr<shm::posix::POSIXChannel<msg::ClientCtrlCommands, 16, 1>> client_ctrl_channel_;
   std::shared_ptr<shm::posix::POSIXChannel<msg::ServerMsg, 128, 1>> client_response_channel_;
-  std::shared_ptr<shm::posix::POSIXSharedMemory<SharedMemArea>> client_request_memory_area_;
+  std::shared_ptr<shm::posix::POSIXSharedMemory<char*>> client_request_memory_area_;
+  char* response_pool_;
 };
 
 } // namespace mem
